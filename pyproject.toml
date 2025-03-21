@@ -1,0 +1,10 @@
+[project]
+name = "alchemist"
+version = "0.0.1.dev1"
+description = "Sqlalchemy companion"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dearpygui>=2.0.0",
+    "sqlalchemy==1.4.54",
+]

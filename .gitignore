@@ -1,0 +1,17 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+alchemist/widgets
+alchemist/db_editor.py
+alchemist/loader.py
+alchemist/core/db_class.py
+db.py
+*.sqlite
+test.py
+assets
+# Virtual environments
+.venv
