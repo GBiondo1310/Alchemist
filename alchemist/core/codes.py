@@ -44,7 +44,7 @@ RELATIONSHIP_PARENT = """
     %child_tablename%: list[%child_class%] = relationship("%child_class%", back_populates="%parent_tablename%")"""
 
 RELATIONSHIP_CHILD_FK = """
-    %parent_tablename%_id: int = Column(Integer, ForeignKey("%parent_tablename%.id"))"""
+    %parent_tablename%: int = Column(Integer, ForeignKey("%parent_tablename%.id"))"""
 
 RELATIONSHIP_CHILD = """
     %parent_tablename%: %parent_class%= relationship("%parent_class%", back_populates="%child_tablename%s")

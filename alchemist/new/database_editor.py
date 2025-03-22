@@ -1,5 +1,7 @@
 import dearpygui.dearpygui as dpg
 from .widgets.node import TableNode
+from .widgets.field import TableField
+from ..utils import center_to_viewport, center_to_widget
 
 
 class DatabaseEditor:
@@ -31,8 +33,47 @@ class DatabaseEditor:
             with dpg.node_editor(tag="!node_editor", callback=self.add_link):
                 pass
 
-    def add_link(self):
-        pass
+    def add_link(self, sender, items):
+        parent_table_tag = dpg.get_item_alias(dpg.get_item_parent(items[0]))
+        child_table_tag = dpg.get_item_alias(dpg.get_item_parent(items[1]))
+
+        parent_toplevel: TableNode = dpg.get_item_user_data(parent_table_tag)
+        child_toplevel: TableNode = dpg.get_item_user_data(child_table_tag)
+
+        c1 = TableField(
+            child_toplevel.cur_id,
+            child_toplevel,
+            dpg.get_value(parent_toplevel.tag + "!__tablename__") + "_id",
+            "Relationship FK",
+            user_data=dpg.get_value(parent_toplevel.tag + "!__tablename__"),
+            attr_type="input",
+        ).tag
+
+        child_toplevel.cur_id += 1
+
+        c2 = TableField(
+            child_toplevel.cur_id,
+            child_toplevel,
+            dpg.get_value(parent_toplevel.tag + "!__tablename__"),
+            "Relationship Child",
+            user_data=dpg.get_value(parent_toplevel.tag + "!class_name"),
+            attr_type=None,
+        ).tag
+
+        child_toplevel.cur_id += 1
+
+        p1 = TableField(
+            parent_toplevel.cur_id,
+            parent_toplevel,
+            dpg.get_value(child_toplevel.tag + "!__tablename__") + "s",
+            "Relationship Parent",
+            user_data=dpg.get_value(child_toplevel.tag + "!class_name"),
+            attr_type="output",
+        ).tag
+
+        parent_toplevel.cur_id += 1
+
+        dpg.add_node_link(p1, c1, parent=sender, tag=f"{c1}!{c2}!{p1}")
 
     def new_database(self):
         mw_width = dpg.get_viewport_width()

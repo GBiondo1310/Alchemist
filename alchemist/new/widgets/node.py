@@ -4,6 +4,7 @@ import dearpygui.dearpygui as dpg
 
 from .field import TableField
 from ...core.db_class import DBClass
+from ...utils import center_to_viewport
 
 
 class TableNode:
@@ -69,7 +70,7 @@ class TableNode:
     def add_field(self):
         if self.code_open:
             self.toggle_code()
-        TableField(self.cur_id, self, editable=True, deletable=True, attr_type="output")
+        TableField(self.cur_id, self, editable=True, deletable=True)
         self.cur_id += 1
         if not self.code_open:
             self.toggle_code()
@@ -95,8 +96,6 @@ class TableNode:
             db_class.classname = dpg.get_value(f"{self.tag}!class_name")
             db_class.tablename = dpg.get_value(f"{self.tag}!__tablename__")
 
-            print(db_class.classname)
-
             for attribute in self.attributes:
 
                 field_name = dpg.get_value(f"{attribute}!column_name")
@@ -111,14 +110,14 @@ class TableNode:
                         attribute,
                         field_name,
                         dpg.get_item_user_data(attribute),
-                        self.tablename,
+                        dpg.get_value(f"{self.tag}!__tablename__"),
                     )
                 elif field_type == "Relationship Parent":
                     db_class.add_relationship_field_parent(
                         attribute,
                         field_name,
                         dpg.get_item_user_data(attribute),
-                        self.tablename,
+                        dpg.get_value(f"{self.tag}!__tablename__"),
                     )
                 else:
                     db_class.add_field(attribute, field_name, field_type, field_pk)
@@ -129,8 +128,6 @@ class TableNode:
             return code
 
     def delete(self):
-        mw_width = dpg.get_viewport_width()
-        mw_height = dpg.get_viewport_height()
 
         def delete_node(self, modal_window):
             dpg.delete_item(modal_window)
@@ -142,7 +139,6 @@ class TableNode:
             modal=True,
             width=300,
             height=50,
-            pos=((mw_width - 300) / 2, (mw_height - 50) / 2),
             no_resize=True,
             no_move=True,
             no_collapse=True,
