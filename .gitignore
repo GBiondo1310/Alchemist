@@ -8,7 +8,6 @@ wheels/
 alchemist/widgets
 alchemist/db_editor.py
 alchemist/loader.py
-alchemist/core/db_class.py
 db.py
 *.sqlite
 test.py
