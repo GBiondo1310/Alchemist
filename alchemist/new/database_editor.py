@@ -1,7 +1,6 @@
 import dearpygui.dearpygui as dpg
 from .widgets.node import TableNode
 from .widgets.field import TableField
-from ..utils import center_to_viewport, center_to_widget
 from ..core.codes import IMPORTS
 
 
@@ -11,16 +10,11 @@ class DatabaseEditor:
     nodes = []
 
     def __init__(self):
-        with dpg.window(
-            label="Generated code", width=1080, height=720, tag="!generated_code"
-        ):
-            t = dpg.add_input_text(
-                multiline=True, width=-1, height=-1, tag="!generated_code!code"
-            )
-        dpg.configure_item("!generated_code", show=False)
 
         with dpg.window(
-            label="Database editor", tag="!database_editor", user_data=self
+            label="Database editor",
+            tag="!database_editor",
+            user_data=self,
         ):
             with dpg.menu_bar():
                 with dpg.menu(label="File"):
@@ -53,12 +47,26 @@ class DatabaseEditor:
                     callback=self.update_code,
                 )
 
-            with dpg.node_editor(
-                tag="!node_editor",
-                callback=self.add_link,
-                delink_callback=self.delete_link,
-            ):
-                pass
+            with dpg.group(horizontal=True):
+
+                with dpg.node_editor(
+                    tag="!node_editor",
+                    callback=self.add_link,
+                    delink_callback=self.delete_link,
+                ):
+                    pass
+
+                with dpg.window(
+                    label="Generated code",
+                    width=500,
+                    tag="!generated_code",
+                    no_background=True,
+                    no_title_bar=True,
+                ):
+                    t = dpg.add_input_text(
+                        multiline=True, width=-1, height=-1, tag="!generated_code!code"
+                    )
+                dpg.configure_item("!generated_code", show=False)
 
     def add_link(self, sender, items):
         parent_table_tag = dpg.get_item_alias(dpg.get_item_parent(items[0]))
@@ -196,3 +204,11 @@ class DatabaseEditor:
         self.node_counter += 1
         db_editor = dpg.get_item_user_data("!database_editor")
         db_editor.update_code()
+
+    def set_code_pos(self):
+
+        main_window_width = dpg.get_item_width("!database_editor")
+        main_window_height = dpg.get_item_height("!database_editor")
+
+        dpg.set_item_height("!generated_code", main_window_height - 20)
+        dpg.set_item_pos("!generated_code", (main_window_width - 500, 20))
