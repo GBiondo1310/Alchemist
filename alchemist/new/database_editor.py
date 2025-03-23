@@ -68,6 +68,8 @@ class DatabaseEditor:
                     )
                 dpg.configure_item("!generated_code", show=False)
 
+            self.update_code()
+
     def add_link(self, sender, items):
         parent_table_tag = dpg.get_item_alias(dpg.get_item_parent(items[0]))
         child_table_tag = dpg.get_item_alias(dpg.get_item_parent(items[1]))
@@ -141,6 +143,8 @@ class DatabaseEditor:
 
             self.nodes = []
 
+            self.update_code()
+
         with dpg.window(
             label="Delete table",
             modal=True,
@@ -178,7 +182,21 @@ class DatabaseEditor:
         self.update_code()
 
     def export(self):
-        pass
+        def save_to_file(sender, app_data):
+            filename = app_data.get("file_path_name")
+            code = dpg.get_value("!generated_code!code")
+            with open(filename, mode="w") as code_file:
+                code_file.write(code)
+
+        with dpg.file_dialog(
+            directory_selector=False,
+            modal=True,
+            callback=save_to_file,
+            width=700,
+            height=350,
+            default_filename="export",
+        ):
+            dpg.add_file_extension(".py")
 
     def generate_code(self):
         code = IMPORTS.replace("%database_name%", dpg.get_value("!database_name"))
