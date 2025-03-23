@@ -196,3 +196,39 @@ class TableNode:
             c1_toplevel.update()
 
         return self.update()
+
+    def save(self):
+        columns = {}
+        for attribute in self.attributes:
+
+            field_name = dpg.get_value(f"{attribute}!column_name")
+            field_type = dpg.get_value(f"{attribute}!column_type")
+            if not field_type.startswith("Relationship"):
+                columns.update({field_name: field_type})
+
+        result = {
+            dpg.get_value(self.tag + "!class_name"): {
+                "tablename": dpg.get_value(self.tag + "!__tablename__"),
+                "columns": columns,
+            }
+        }
+
+        links = {}
+        for link in self.links:
+            c1, _, p1 = link.split("+")
+            c1_toplevel_tag = c1.split("!attr")[0]
+            p1_toplevel_tag = p1.split("!attr")[0]
+
+            p1_toplevel = dpg.get_item_user_data(p1_toplevel_tag)
+            c1_toplevel = dpg.get_item_user_data(c1_toplevel_tag)
+            if p1_toplevel == self:
+
+                links.update(
+                    {
+                        dpg.get_value(p1_toplevel.tag + "!class_name"): dpg.get_value(
+                            c1_toplevel.tag + "!class_name"
+                        )
+                    }
+                )
+
+        return result, links

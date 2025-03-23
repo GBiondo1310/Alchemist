@@ -23,6 +23,10 @@ class DatabaseEditor:
             with dpg.menu_bar():
                 with dpg.menu(label="File"):
                     dpg.add_menu_item(label="New database", callback=self.new_database)
+                    dpg.add_menu_item(label="Save", callback=self.save)
+                    dpg.add_spacer()
+                    dpg.add_separator()
+                    dpg.add_spacer()
                     dpg.add_menu_item(
                         label="Export to python file", callback=self.export
                     )
@@ -273,7 +277,7 @@ class DatabaseEditor:
                 )
 
     def load_imported_database(self, loader: Loader):
-        dpg.set_value("!database_name", "")
+
         for x in range(100, self.node_counter):
             dpg.delete_item(f"!node_editor!table_{x}")
 
@@ -284,6 +288,8 @@ class DatabaseEditor:
         tables = {}
 
         table: Table
+
+        dpg.set_value("!database_name", loader.datababse)
         for table in loader.tables:
             t = TableNode(self.node_counter)
             self.node_counter += 1
@@ -303,20 +309,35 @@ class DatabaseEditor:
 
             tables.update({table.table: t})
 
-        for parent, child in loader.links.items():
-            parent = tables.get(parent)
-            child = tables.get(child)
+        for link in loader.links:
+            for parent, child in link.items():
+                parent = tables.get(parent)
+                child = tables.get(child)
 
-            parent = dpg.get_item_children(parent.tag).get(1)[0]
-            child = dpg.get_item_children(child.tag).get(1)[0]
+                parent = dpg.get_item_children(parent.tag).get(1)[0]
+                child = dpg.get_item_children(child.tag).get(1)[0]
 
-            self.add_link(
-                "!node_editor",
-                [parent, child],
-            )
+                self.add_link(
+                    "!node_editor",
+                    [parent, child],
+                )
 
         self.update_code()
 
     def save(self):
+        with open("temp.json", mode="r") as temp_json:
+            temp = json.load(temp_json)
+
+        links = []
+        tables = []
         database_name = dpg.get_value("!database_name")
-        # TODO - Continue with save
+        for table in self.nodes:
+            toplevel = dpg.get_item_user_data(table)
+            result, link = toplevel.save()
+            links.append(link)
+            tables.append(result)
+
+        temp.update({database_name: {"tables": tables, "links": links}})
+
+        with open("temp.json", mode="w") as temp_json:
+            json.dump(temp, temp_json, indent=4)
