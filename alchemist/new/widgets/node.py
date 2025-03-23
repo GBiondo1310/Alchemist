@@ -13,6 +13,7 @@ class TableNode:
         self.cur_id = 0
         self.code_open = False
         self.tag = f"!node_editor!table_{id}"
+        self.links = []
 
         with dpg.node(
             label="New table", parent="!node_editor", tag=self.tag, user_data=self
@@ -62,18 +63,19 @@ class TableNode:
 
     def set_class_name(self, sender, app_data, user_data):
         dpg.set_item_label(f"{self.tag}", app_data)
-        self.update()
+        self.update_linked_tables()
 
     def set_tablename(self, sender, app_data, user_data):
-        self.update()
+        self.update_linked_tables()
 
     def add_field(self):
         if self.code_open:
             self.toggle_code()
-        TableField(self.cur_id, self, editable=True, deletable=True)
-        self.cur_id += 1
-        if not self.code_open:
+            TableField(self.cur_id, self, editable=True, deletable=True)
             self.toggle_code()
+        if not self.code_open:
+            TableField(self.cur_id, self, editable=True, deletable=True)
+        self.cur_id += 1
 
     def toggle_code(self):
         dpg.delete_item(self.tag + "!code_attr")
@@ -87,7 +89,7 @@ class TableNode:
                 dpg.add_text("", tag=self.tag + "!code")
 
         self.code_open = not self.code_open
-        self.update()
+        self.update_linked_tables()
 
     def update(self):
         if self.code_open:
@@ -152,3 +154,31 @@ class TableNode:
                 dpg.add_spacer(width=50)
                 dpg.add_button(label="No", callback=lambda: dpg.delete_item(modal))
                 dpg.add_spacer(width=75)
+
+    def update_linked_tables(self):
+        for link in self.links:
+            c1, c2, p1 = link.split("+")
+            c1_toplevel_tag = c1.split("!attr")[0]
+            c2_toplevel_tag = c2.split("!attr")[0]
+            p1_toplevel_tag = p1.split("!attr")[0]
+
+            p1_toplevel = dpg.get_item_user_data(p1_toplevel_tag)
+            c1_toplevel = dpg.get_item_user_data(c1_toplevel_tag)
+
+            # C1 Update field value
+            new_value = dpg.get_value(p1_toplevel.tag + "!__tablename__")
+            dpg.set_value(c1 + "!column_name", new_value + "_id")
+
+            # C2 Update field value
+            dpg.set_value(c2 + "!column_name", new_value)
+            dpg.set_item_user_data(c2, dpg.get_value(p1_toplevel.tag + "!class_name"))
+
+            # P1 Update field value
+            new_value = dpg.get_value(c1_toplevel.tag + "!__tablename__")
+            dpg.set_value(p1 + "!column_name", new_value + "s")
+            dpg.set_item_user_data(p1, dpg.get_value(c1_toplevel.tag + "!class_name"))
+
+            p1_toplevel.update()
+            c1_toplevel.update()
+
+        self.update()

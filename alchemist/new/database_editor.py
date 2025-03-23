@@ -44,6 +44,16 @@ class DatabaseEditor:
         parent_toplevel: TableNode = dpg.get_item_user_data(parent_table_tag)
         child_toplevel: TableNode = dpg.get_item_user_data(child_table_tag)
 
+        parent_reopen = False
+        child_reopen = False
+
+        if parent_toplevel.code_open:
+            parent_toplevel.toggle_code()
+            parent_reopen = True
+        if child_toplevel.code_open:
+            child_toplevel.toggle_code()
+            child_reopen = True
+
         c1 = TableField(
             child_toplevel.cur_id,
             child_toplevel,
@@ -79,6 +89,14 @@ class DatabaseEditor:
 
         dpg.add_node_link(p1, c1, parent=sender, tag=f"{c1}+{c2}+{p1}")
 
+        if parent_reopen:
+            parent_toplevel.toggle_code()
+        if child_reopen:
+            child_toplevel.toggle_code()
+
+        parent_toplevel.links.append(f"{c1}+{c2}+{p1}")
+        child_toplevel.links.append(f"{c1}+{c2}+{p1}")
+
     def new_database(self):
         mw_width = dpg.get_viewport_width()
         mw_height = dpg.get_viewport_height()
@@ -111,15 +129,17 @@ class DatabaseEditor:
                 dpg.add_button(label="No", callback=lambda: dpg.delete_item(modal))
                 dpg.add_spacer(width=75)
 
-    def delete_link(self, sender, app_data, user_data, *other):
+    def delete_link(self, sender, app_data):
         link_tag = dpg.get_item_alias(app_data)
         for connected_item in link_tag.split("+"):
             parent = dpg.get_item_user_data(
                 dpg.get_item_alias(dpg.get_item_parent(connected_item))
             )
             parent.attributes.remove(connected_item)
+            if link_tag in parent.links:
+                parent.links.remove(link_tag)
             dpg.delete_item(connected_item)
-
+            parent.update_linked_tables()
         dpg.delete_item(link_tag)
 
     def export(self):
