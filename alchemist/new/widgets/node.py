@@ -15,6 +15,7 @@ class TableNode:
         self.tag = f"!node_editor!table_{id}"
         self.links = []
 
+        dpg.get_item_user_data("!database_editor").nodes.append(self.tag)
         with dpg.node(
             label="New table", parent="!node_editor", tag=self.tag, user_data=self
         ):
@@ -63,10 +64,12 @@ class TableNode:
 
     def set_class_name(self, sender, app_data, user_data):
         dpg.set_item_label(f"{self.tag}", app_data)
-        self.update_linked_tables()
+        db_editor = dpg.get_item_user_data("!database_editor")
+        db_editor.update_code()
 
     def set_tablename(self, sender, app_data, user_data):
-        self.update_linked_tables()
+        db_editor = dpg.get_item_user_data("!database_editor")
+        db_editor.update_code()
 
     def add_field(self):
         if self.code_open:
@@ -76,6 +79,8 @@ class TableNode:
         if not self.code_open:
             TableField(self.cur_id, self, editable=True, deletable=True)
         self.cur_id += 1
+        db_editor = dpg.get_item_user_data("!database_editor")
+        db_editor.update_code()
 
     def toggle_code(self):
         dpg.delete_item(self.tag + "!code_attr")
@@ -92,48 +97,51 @@ class TableNode:
         self.update_linked_tables()
 
     def update(self):
+        db_class = DBClass()
+
+        db_class.classname = dpg.get_value(f"{self.tag}!class_name")
+        db_class.tablename = dpg.get_value(f"{self.tag}!__tablename__")
+
+        for attribute in self.attributes:
+
+            field_name = dpg.get_value(f"{attribute}!column_name")
+            field_type = dpg.get_value(f"{attribute}!column_type")
+            field_pk = dpg.get_value(f"{attribute}!column_pk")
+            if field_type == "Relationship FK":
+                db_class.add_relationship_field_child_fk(
+                    attribute, field_name, dpg.get_item_user_data(attribute)
+                )
+            elif field_type == "Relationship Child":
+                db_class.add_relationship_field_child(
+                    attribute,
+                    field_name,
+                    dpg.get_item_user_data(attribute),
+                    dpg.get_value(f"{self.tag}!__tablename__"),
+                )
+            elif field_type == "Relationship Parent":
+                db_class.add_relationship_field_parent(
+                    attribute,
+                    field_name,
+                    dpg.get_item_user_data(attribute),
+                    dpg.get_value(f"{self.tag}!__tablename__"),
+                )
+            else:
+                db_class.add_field(attribute, field_name, field_type, field_pk)
+
+        code = db_class.generate_code()
         if self.code_open:
-            db_class = DBClass()
-
-            db_class.classname = dpg.get_value(f"{self.tag}!class_name")
-            db_class.tablename = dpg.get_value(f"{self.tag}!__tablename__")
-
-            for attribute in self.attributes:
-
-                field_name = dpg.get_value(f"{attribute}!column_name")
-                field_type = dpg.get_value(f"{attribute}!column_type")
-                field_pk = dpg.get_value(f"{attribute}!column_pk")
-                if field_type == "Relationship FK":
-                    db_class.add_relationship_field_child_fk(
-                        attribute, field_name, dpg.get_item_user_data(attribute)
-                    )
-                elif field_type == "Relationship Child":
-                    db_class.add_relationship_field_child(
-                        attribute,
-                        field_name,
-                        dpg.get_item_user_data(attribute),
-                        dpg.get_value(f"{self.tag}!__tablename__"),
-                    )
-                elif field_type == "Relationship Parent":
-                    db_class.add_relationship_field_parent(
-                        attribute,
-                        field_name,
-                        dpg.get_item_user_data(attribute),
-                        dpg.get_value(f"{self.tag}!__tablename__"),
-                    )
-                else:
-                    db_class.add_field(attribute, field_name, field_type, field_pk)
-
-            code = db_class.generate_code()
-
             dpg.set_value(self.tag + "!code", db_class.generate_code())
-            return code
+        return code
 
     def delete(self):
 
         def delete_node(self, modal_window):
+            dpg.get_item_user_data("!database_editor").nodes.remove(self.tag)
+            db_editor = dpg.get_item_user_data("!database_editor")
+            db_editor.update_code()
             dpg.delete_item(modal_window)
             dpg.delete_item(self.tag)
+
             del self
 
         with dpg.window(
@@ -181,4 +189,4 @@ class TableNode:
             p1_toplevel.update()
             c1_toplevel.update()
 
-        self.update()
+        return self.update()

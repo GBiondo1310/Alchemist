@@ -46,7 +46,7 @@ class TableField:
                     width=100,
                     hint="Type column name...",
                     tag=f"{self.tag}!column_name",
-                    callback=self.parent_node.update_linked_tables,
+                    callback=self.update_editor,
                     enabled=self.editable,
                     default_value=column_name,
                 )
@@ -54,7 +54,7 @@ class TableField:
                 dpg.add_combo(
                     width=100,
                     items=["Integer", "Float", "String", "DateTime", "Boolean"],
-                    callback=self.parent_node.update_linked_tables,
+                    callback=self.update_editor,
                     tag=f"{self.tag}!column_type",
                     enabled=self.editable,
                     default_value=column_type,
@@ -70,3 +70,7 @@ class TableField:
             self.parent_node.attributes.remove(self.tag)
             self.parent_node.update_linked_tables()
         dpg.delete_item(self.tag)
+
+    def update_editor(self):
+        db_editor = dpg.get_item_user_data("!database_editor")
+        db_editor.update_code()

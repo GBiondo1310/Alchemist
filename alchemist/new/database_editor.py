@@ -2,13 +2,26 @@ import dearpygui.dearpygui as dpg
 from .widgets.node import TableNode
 from .widgets.field import TableField
 from ..utils import center_to_viewport, center_to_widget
+from ..core.codes import IMPORTS
 
 
 class DatabaseEditor:
     node_counter = 100
+    code_shown = False
+    nodes = []
 
     def __init__(self):
-        with dpg.window(label="Database editor", tag="!database_editor"):
+        with dpg.window(
+            label="Generated code", width=1080, height=720, tag="!generated_code"
+        ):
+            t = dpg.add_input_text(
+                multiline=True, width=-1, height=-1, tag="!generated_code!code"
+            )
+        dpg.configure_item("!generated_code", show=False)
+
+        with dpg.window(
+            label="Database editor", tag="!database_editor", user_data=self
+        ):
             with dpg.menu_bar():
                 with dpg.menu(label="File"):
                     dpg.add_menu_item(label="New database", callback=self.new_database)
@@ -25,10 +38,20 @@ class DatabaseEditor:
                 with dpg.menu(label="Insert"):
                     dpg.add_menu_item(label="New table", callback=self.new_table)
 
+                dpg.add_menu_item(
+                    label="Show code",
+                    callback=self.toggle_code,
+                    tag="!show_code_button",
+                )
+
             with dpg.menu_bar():
                 dpg.add_text("          ")
                 dpg.add_text("Database:")
-                dpg.add_input_text(hint="Database name", tag="!database_name")
+                dpg.add_input_text(
+                    hint="Database name",
+                    tag="!database_name",
+                    callback=self.update_code,
+                )
 
             with dpg.node_editor(
                 tag="!node_editor",
@@ -96,6 +119,7 @@ class DatabaseEditor:
 
         parent_toplevel.links.append(f"{c1}+{c2}+{p1}")
         child_toplevel.links.append(f"{c1}+{c2}+{p1}")
+        self.update_code()
 
     def new_database(self):
         mw_width = dpg.get_viewport_width()
@@ -106,6 +130,8 @@ class DatabaseEditor:
             dpg.set_value("!database_name", "")
             for x in range(100, self.node_counter):
                 dpg.delete_item(f"!node_editor!table_{x}")
+
+            self.nodes = []
 
         with dpg.window(
             label="Delete table",
@@ -141,10 +167,32 @@ class DatabaseEditor:
             dpg.delete_item(connected_item)
             parent.update_linked_tables()
         dpg.delete_item(link_tag)
+        self.update_code()
 
     def export(self):
         pass
 
+    def generate_code(self):
+        code = IMPORTS.replace("%database_name%", dpg.get_value("!database_name"))
+        node: TableNode
+        for node in self.nodes:
+            user_data = dpg.get_item_user_data(node)
+            new_code = user_data.update_linked_tables()
+            code = code + new_code
+
+        return code
+
+    def update_code(self):
+        dpg.set_value("!generated_code!code", self.generate_code())
+
+    def toggle_code(self):
+        self.code_shown = not self.code_shown
+        dpg.configure_item("!generated_code", show=self.code_shown)
+        label_text = "Show code" if not self.code_shown else "Hide code"
+        dpg.set_item_label("!show_code_button", label_text)
+
     def new_table(self):
         TableNode(self.node_counter)
         self.node_counter += 1
+        db_editor = dpg.get_item_user_data("!database_editor")
+        db_editor.update_code()
