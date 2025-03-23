@@ -135,8 +135,13 @@ class TableNode:
 
     def delete(self):
 
-        def delete_node(self, modal_window):
+        def delete_node(self: TableNode, modal_window):
             dpg.get_item_user_data("!database_editor").nodes.remove(self.tag)
+
+            for link in self.links:
+                editor = dpg.get_item_user_data("!database_editor")
+                editor.delete_link(None, link)
+
             db_editor = dpg.get_item_user_data("!database_editor")
             db_editor.update_code()
             dpg.delete_item(modal_window)
@@ -154,6 +159,7 @@ class TableNode:
             no_collapse=True,
             no_title_bar=True,
         ) as modal:
+            dpg.set_item_pos(modal, center_to_viewport(modal))
             dpg.add_text("Do you really want to delete this table?")
             dpg.add_spacer(height=13)
             with dpg.group(horizontal=True):
