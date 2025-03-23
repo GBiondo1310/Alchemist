@@ -30,7 +30,11 @@ class DatabaseEditor:
                 dpg.add_text("Database:")
                 dpg.add_input_text(hint="Database name", tag="!database_name")
 
-            with dpg.node_editor(tag="!node_editor", callback=self.add_link):
+            with dpg.node_editor(
+                tag="!node_editor",
+                callback=self.add_link,
+                delink_callback=self.delete_link,
+            ):
                 pass
 
     def add_link(self, sender, items):
@@ -73,7 +77,7 @@ class DatabaseEditor:
 
         parent_toplevel.cur_id += 1
 
-        dpg.add_node_link(p1, c1, parent=sender, tag=f"{c1}!{c2}!{p1}")
+        dpg.add_node_link(p1, c1, parent=sender, tag=f"{c1}+{c2}+{p1}")
 
     def new_database(self):
         mw_width = dpg.get_viewport_width()
@@ -106,6 +110,17 @@ class DatabaseEditor:
                 dpg.add_spacer(width=50)
                 dpg.add_button(label="No", callback=lambda: dpg.delete_item(modal))
                 dpg.add_spacer(width=75)
+
+    def delete_link(self, sender, app_data, user_data, *other):
+        link_tag = dpg.get_item_alias(app_data)
+        for connected_item in link_tag.split("+"):
+            parent = dpg.get_item_user_data(
+                dpg.get_item_alias(dpg.get_item_parent(connected_item))
+            )
+            parent.attributes.remove(connected_item)
+            dpg.delete_item(connected_item)
+
+        dpg.delete_item(link_tag)
 
     def export(self):
         pass
