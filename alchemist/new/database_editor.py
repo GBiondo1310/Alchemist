@@ -1,7 +1,11 @@
+import json
+
 import dearpygui.dearpygui as dpg
 from .widgets.node import TableNode
 from .widgets.field import TableField
+from ..utils import center_to_viewport, center_to_widget
 from ..core.codes import IMPORTS
+from ..core.loader import Loader, Table
 
 
 class DatabaseEditor:
@@ -21,8 +25,10 @@ class DatabaseEditor:
                     dpg.add_menu_item(label="New database", callback=self.new_database)
                     dpg.add_menu_item(
                         label="Export to python file", callback=self.export
-                    )  # TODO - define export
-
+                    )
+                    dpg.add_menu_item(
+                        label="Import database", callback=self.import_database
+                    )
                     dpg.add_spacer()
                     dpg.add_separator()
                     dpg.add_spacer()
@@ -71,8 +77,11 @@ class DatabaseEditor:
             self.update_code()
 
     def add_link(self, sender, items):
+
         parent_table_tag = dpg.get_item_alias(dpg.get_item_parent(items[0]))
         child_table_tag = dpg.get_item_alias(dpg.get_item_parent(items[1]))
+        print(parent_table_tag)
+        print(child_table_tag)
 
         parent_toplevel: TableNode = dpg.get_item_user_data(parent_table_tag)
         child_toplevel: TableNode = dpg.get_item_user_data(child_table_tag)
@@ -230,3 +239,84 @@ class DatabaseEditor:
 
         dpg.set_item_height("!generated_code", main_window_height - 20)
         dpg.set_item_pos("!generated_code", (main_window_width - 500, 20))
+
+    def import_database(self):
+        with open("temp.json", mode="r") as temp_json:
+            temp = json.load(temp_json)
+
+        databases = list(temp.keys())
+
+        def load_database(database, modal_id):
+            loader = Loader(temp, database)
+            self.load_imported_database(loader)
+            dpg.delete_item(modal_id)
+
+        with dpg.window(
+            label="Pick a database", modal=True, height=120, width=300
+        ) as database_dialog:
+            center_to_viewport(database_dialog)
+
+            combo = dpg.add_combo(items=databases, default_value=databases[0])
+
+            dpg.add_spacer(height=30)
+
+            with dpg.group(horizontal=True):
+                dpg.add_button(
+                    label="Load",
+                    callback=lambda: load_database(
+                        dpg.get_value(combo), database_dialog
+                    ),
+                )
+
+                dpg.add_button(
+                    label="Cancel", callback=lambda: dpg.delete_item(database_dialog)
+                )
+
+    def load_imported_database(self, loader: Loader):
+        dpg.set_value("!database_name", "")
+        for x in range(100, self.node_counter):
+            dpg.delete_item(f"!node_editor!table_{x}")
+
+        self.nodes = []
+
+        self.update_code()
+
+        tables = {}
+
+        table: Table
+        for table in loader.tables:
+            t = TableNode(self.node_counter)
+            self.node_counter += 1
+            dpg.set_value(t.tag + "!class_name", table.table)
+            dpg.set_item_label(t.tag, table.table)
+            dpg.set_value(t.tag + "!__tablename__", table.tablename)
+
+            for field_name, field_type in table.columns.items():
+                TableField(
+                    t.cur_id,
+                    t,
+                    field_name,
+                    field_type,
+                    add_to_parent_attributes=True,
+                )
+                t.cur_id += 1
+
+            tables.update({table.table: t})
+
+        for parent, child in loader.links.items():
+            parent = tables.get(parent)
+            child = tables.get(child)
+
+            parent = dpg.get_item_children(parent.tag).get(1)[0]
+            child = dpg.get_item_children(child.tag).get(1)[0]
+
+            self.add_link(
+                "!node_editor",
+                [parent, child],
+            )
+
+        self.update_code()
+
+    def save(self):
+        database_name = dpg.get_value("!database_name")
+        # TODO - Continue with save
