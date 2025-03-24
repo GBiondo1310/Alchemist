@@ -307,20 +307,25 @@ class DatabaseEditor:
                 )
                 t.cur_id += 1
 
+            print(table.pos)
+            dpg.set_item_pos(f"!node_editor!table_{self.node_counter - 1}", table.pos)
+
             tables.update({table.table: t})
 
         for link in loader.links:
-            for parent, child in link.items():
+            for parent, children in link.items():
                 parent = tables.get(parent)
-                child = tables.get(child)
-
                 parent = dpg.get_item_children(parent.tag).get(1)[0]
-                child = dpg.get_item_children(child.tag).get(1)[0]
+                print(parent)
+                for child in children:
+                    child = tables.get(child)
 
-                self.add_link(
-                    "!node_editor",
-                    [parent, child],
-                )
+                    child = dpg.get_item_children(child.tag).get(1)[0]
+
+                    self.add_link(
+                        "!node_editor",
+                        [parent, child],
+                    )
 
         self.update_code()
 

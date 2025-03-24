@@ -210,10 +210,12 @@ class TableNode:
             dpg.get_value(self.tag + "!class_name"): {
                 "tablename": dpg.get_value(self.tag + "!__tablename__"),
                 "columns": columns,
+                "pos": dpg.get_item_pos(self.tag),
             }
         }
 
-        links = {}
+        p1_toplevel = None
+        links = []
         for link in self.links:
             c1, _, p1 = link.split("+")
             c1_toplevel_tag = c1.split("!attr")[0]
@@ -223,12 +225,10 @@ class TableNode:
             c1_toplevel = dpg.get_item_user_data(c1_toplevel_tag)
             if p1_toplevel == self:
 
-                links.update(
-                    {
-                        dpg.get_value(p1_toplevel.tag + "!class_name"): dpg.get_value(
-                            c1_toplevel.tag + "!class_name"
-                        )
-                    }
-                )
+                links.append(dpg.get_value(c1_toplevel.tag + "!class_name"))
+        if p1_toplevel:
+            links = {dpg.get_value(p1_toplevel.tag + "!class_name"): links}
+        else:
+            links = {}
 
         return result, links

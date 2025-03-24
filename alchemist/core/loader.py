@@ -5,6 +5,7 @@ class Table:
         self.tablename = self.body.get("tablename")
         self.columns = self.body.get("columns")
         self.links = self.body.get("links")
+        self.pos = self.body.get("pos")
 
 
 class Loader:
